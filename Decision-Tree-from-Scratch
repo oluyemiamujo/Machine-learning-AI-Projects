@@ -1,0 +1,359 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+
+# In[1]:
+
+
+import pandas as pd
+import numpy as np
+
+dataset = pd.read_csv("car_evaluation.csv")
+dataset
+
+
+# ### Entropy computation must yield between 0 & 1 but the normal entropy formular I implemented is greater than 1 due to log2. Theerefore, I used log10
+
+# In[2]:
+
+
+def compute_entropy(target):
+    if isinstance(target, pd.Series):
+        a = target.value_counts()/target.shape[0]
+        compute_entropy = np.sum(-a*np.log10(a+1e-9))
+        return(compute_entropy)
+    else:
+        raise ValueError('Object datatype not supported.')
+        
+
+
+# In[3]:
+
+
+def compute_variance(target):
+    if(len(target) == 1):
+        return 0
+    else:
+        return target.var()
+
+
+# In[4]:
+
+
+def information_gain(y, mask, func=compute_entropy):
+    a = sum(mask)
+    b = mask.shape[0] - a
+     
+    if(a == 0 or b == 0): 
+        ig = 0
+  
+    else:
+        if y.dtypes != 'O':
+            ig = compute_variance(y) - (a/(a+b)* compute_variance(y[mask])) - (b/(a+b)*compute_variance(y[-mask]))
+        else:
+            ig = func(y)-a/(a+b)*func(y[mask])-b/(a+b)*func(y[-mask])
+  
+    return ig
+
+
+# In[5]:
+
+
+information_gain(dataset['class'], dataset['buying'] == 'vhigh')
+
+
+# In[6]:
+
+
+import itertools
+
+def categorical_options(a):
+    a = a.unique()
+
+    options = []
+    for L in range(0, len(a)+1):
+        for subset in itertools.combinations(a, L):
+            subset = list(subset)
+            options.append(subset)
+
+    return options[1:-1]
+
+def max_information_gain_split(x, y, func=compute_entropy):
+    split_value = []
+    info_gain = [] 
+
+    numeric_variable = True if x.dtypes != 'O' else False
+
+    if numeric_variable:
+        options = x.sort_values().unique()[1:]
+    else: 
+        options = categorical_options(x)
+
+    for val in options:
+        mask =  x < val if numeric_variable else x.isin(val)
+        val_info_gain = information_gain(y, mask, func)
+        info_gain.append(val_info_gain)
+        split_value.append(val)
+
+    if len(info_gain) == 0:
+        return(None,None,None, False)
+
+    else:
+        best_info_gain = max(info_gain)
+        best_info_gain_index = info_gain.index(best_info_gain)
+        best_split = split_value[best_info_gain_index]
+        
+        return(best_info_gain,best_split,numeric_variable, True)
+
+
+# ### The features with highest information gain are persons and safety
+
+# In[7]:
+
+
+dataset.drop('class', axis= 1).apply(max_information_gain_split, y = dataset['class'])
+
+
+# In[8]:
+
+
+def convert_series_masks_back_to_df(dd):
+    buying = dd[0]
+    series_buying = pd.Series(buying)
+
+    maint = dd[1]
+    series_maint = pd.Series(maint)
+
+    doors = dd[2]
+    series_doors = pd.Series(doors)
+
+    persons = dd[3]
+    series_persons = pd.Series(persons)
+
+    lug_boot = dd[4]
+    series_lug_boot = pd.Series(lug_boot)
+
+    safety = dd[5]
+    series_safety = pd.Series(safety)
+
+    df_buying = pd.DataFrame(series_buying)
+    df_buying = df_buying.rename(columns = {0:'buying'})
+
+    df_maint = pd.DataFrame(series_maint)
+    df_maint = df_maint.rename(columns = {0:'maint'})
+
+    df_doors = pd.DataFrame(series_doors)
+    df_doors = df_doors.rename(columns = {0:'doors'})
+
+    df_persons = pd.DataFrame(series_persons)
+    df_persons = df_persons.rename(columns = {0:'persons'})
+
+    df_lug_boot = pd.DataFrame(series_lug_boot)
+    df_lug_boot = df_lug_boot.rename(columns = {0:'lug_boot'})
+
+    df_safety = pd.DataFrame(series_safety)
+    df_safety = df_safety.rename(columns = {0:'safety'})
+
+    df_dataset = pd.concat([df_buying, df_maint, df_doors, df_persons, df_lug_boot, df_safety], axis=1)
+    
+    return df_dataset
+
+
+def get_dataset_best_split(y, data):
+    series_masks = data.drop(y, axis= 1).apply(max_information_gain_split, y = data[y])
+    
+    masks = convert_series_masks_back_to_df(series_masks)
+    
+    if sum(masks.loc[3,:]) == 0:
+        return(None, None, None, None)
+
+    else:
+    # Get only masks that can be splitted
+        masks = masks.loc[:,masks.loc[3,:]]
+
+        # Get the results for split with highest IG
+        split_variable = max(masks)
+        #split_valid = masks[split_variable][]
+        split_value = masks[split_variable][1] 
+        split_ig = masks[split_variable][0]
+        split_numeric = masks[split_variable][2]
+
+        return(split_variable, split_value, split_ig, split_numeric)
+
+
+def make_dataset_split(variable, value, data, is_numeric):    
+
+    if is_numeric:
+        data_1 = data[data[variable] < value]
+        data_2 = data[(data[variable] < value) == False]
+
+    else:
+        data_1 = data[data[variable].isin(value)]
+        data_2 = data[(data[variable].isin(value)) == False]
+
+    return(data_1,data_2)
+
+def make_prediction(data, target_factor):
+    if target_factor:
+        pred = data.value_counts().idxmax()
+    else:
+        pred = data.mean()
+
+    return pred
+
+
+# In[9]:
+
+
+def decision_tree_trainer(dataset, y, target_factor, max_depth = None, min_samples_split = None, min_information_gain = 1e-20, counter=0, max_categories = 20):
+
+    if counter==0:
+        types = dataset.dtypes
+        check_features = types[types == "object"].index
+        for features in check_features:
+            var_length = len(dataset[features].value_counts()) 
+            if var_length > max_categories:
+                raise ValueError('The variable ' + features + ' has '+ str(var_length) + ' unique values, which are more than the accepted ones: ' +  str(max_categories))
+
+
+    if max_depth == None:
+        depth_cond = True
+
+    else:
+        if counter < max_depth:
+            depth_cond = True
+
+        else:
+            depth_cond = False
+
+    if min_samples_split == None:
+        sample_cond = True
+
+    else:
+        if dataset.shape[0] > min_samples_split:
+            sample_cond = True
+
+        else:
+            sample_cond = False
+
+
+    if depth_cond & sample_cond:
+        var,val,ig,var_type = get_dataset_best_split(y, dataset)
+
+        if ig is not None and ig >= min_information_gain:
+            counter += 1
+
+            left,right = make_dataset_split(var, val, dataset,var_type)
+
+          
+            split_type = "<=" if var_type else "in"
+            query_set =   "{} {}  {}".format(var,split_type,val)
+ 
+            subtree = {query_set: []}
+
+            yes_retrived_set = decision_tree_trainer(left,y, target_factor, max_depth,min_samples_split,min_information_gain, counter)
+
+            no_retrived_set = decision_tree_trainer(right,y, target_factor, max_depth,min_samples_split,min_information_gain, counter)
+
+            if yes_retrived_set == no_retrived_set:
+                subtree = yes_retrived_set
+
+            else:
+                subtree[query_set].append(yes_retrived_set)
+                subtree[query_set].append(no_retrived_set)
+
+
+        else:
+            pred = make_prediction(dataset[y],target_factor)
+            return pred
+
+
+    else:
+        pred = make_prediction(dataset[y],target_factor)
+        return pred
+
+    return subtree
+
+
+# In[10]:
+
+
+max_depth = 5
+min_samples_split = 20
+min_information_gain  = 1e-5
+
+decisions = decision_tree_trainer(dataset,'class',True, max_depth, min_samples_split, min_information_gain)
+
+decisions
+
+
+# In[20]:
+
+
+def comp_prediction(my_sample, my_model):
+    query_set = list(my_model.keys())[0] 
+    if query_set.split()[1] == '<=':
+        if my_sample[query_set.split()[0]] <= float(query_set.split()[2]):
+            retrived_set = my_model[query_set][0]
+        else:
+            retrived_set = my_model[query_set][1]
+
+    else:
+        if str(my_sample[query_set.split()[0]]) in (query_set.split()[2]):
+            retrived_set = my_model[query_set][0]
+        else:
+            retrived_set = my_model[query_set][1]
+
+    if not isinstance(retrived_set, dict):
+        return retrived_set
+    else:
+        residual_tree = retrived_set
+        return comp_prediction(my_sample, retrived_set)
+
+
+# In[12]:
+
+
+# print('Algorithm Accuracy:', accuracy)
+
+
+# In[18]:
+
+
+car_dataset = dataset.loc[:,["buying", "maint", "doors","persons", "lug_boot", "safety", "class"]]
+# car_dataset = car_dataset.loc[car_dataset.isna().sum(axis = 1)==0,:]
+trained_car_dataset = decision_tree_trainer(car_dataset,'class',True, max_depth=10, min_samples_split=10)
+
+trained_car_dataset
+
+
+# In[30]:
+
+
+car_dataset_prediction = []
+my_num_thr = 1728
+
+for i in range(my_num_thr):
+    predicted_cases = comp_prediction(car_dataset.iloc[i,:], trained_car_dataset)
+    car_dataset_prediction.append(predicted_cases)
+
+print("Predictions: ", car_dataset_prediction, "\n Real values:", car_dataset["class"][:my_num_thr])
+car_dataset_prediction
+
+
+# In[33]:
+
+
+def compute_accuracy(y_real, y_predict):   
+    accuracy = np.sum(y_real == y_predict)/len(y_real)   
+    return accuracy
+
+acc2 = compute_accuracy(car_dataset_prediction, car_dataset["class"])
+print("Testing Accuracy: ", acc2)
+
+
+# In[ ]:
+
+
+
+
