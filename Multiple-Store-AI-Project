@@ -1,0 +1,124 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+# A class to store a graph edge
+class Edge:
+    def __init__(self, src, dest, weight):
+        self.src = src
+        self.dest = dest
+        self.weight = weight
+
+
+# A class to store adjacency list nodes
+class Node:
+    def __init__(self, value, weight):
+        self.value = value
+        self.weight = weight
+
+
+# A class to represent a graph object
+class Graph:
+    # Constructor to construct a graph
+    def __init__(self, edges, N):
+
+        # A list of lists to represent an adjacency list
+        self.adj = [None] * N
+
+        # allocate memory for the adjacency list
+        for i in range(N):
+            self.adj[i] = []
+
+        # add edges to the undirected graph
+        for e in edges:
+            # allocate node in adjacency list from src to dest
+            node = Node(e.dest, e.weight)
+            self.adj[e.src].append(node)
+
+
+# Function to print adjacency list representation of a graph
+def printGraph(graph):
+    for src in range(len(graph.adj)):
+        # print current vertex and all its neighboring vertices
+        for edge in graph.adj[src]:
+            print(f"({src} —> {edge.value}, {edge.weight}) ", end='')
+        print()
+
+
+# In[5]:
+
+
+if __name__ == '__main__':
+
+    # Input: Edges in a weighted digraph (as per the above diagram)
+    # Edge `(x, y, w)` represents an edge from `x` to `y` having weight `w`
+    edges = [Edge(1, 2, 20), Edge(1, 3, 20), Edge(2, 4, 20), Edge(2, 5, 30),
+            Edge(3, 6, 40), Edge(3, 7, 10), Edge(4, 8, 10), Edge(4, 9, 20), Edge(5, 10, 30), Edge(5, 11, 20), 
+             Edge(6, 12, 30), Edge(6, 13, 20), Edge(7, 14, 20), Edge(7, 15, 20)]
+
+    divisions = [Edge(1, 2, 1), Edge(1, 3, 1), Edge(2, 4, 1), Edge(2, 5, 1),
+            Edge(3, 6, 1), Edge(3, 7, 1), Edge(4, 8, 1), Edge(4, 9, 1), Edge(5, 10, 1), Edge(5, 11, 1), 
+             Edge(6, 12, 1), Edge(6, 13, 1), Edge(7, 14, 1), Edge(7, 15, 1), Edge(8, 16, 1), Edge(8, 17, 1), 
+                 Edge(9, 18, 1), Edge(9, 19, 1), Edge(10, 20, 1), Edge(10, 21, 1), Edge(11, 22, 1), Edge(11, 23, 1), 
+                 Edge(12, 24, 1), Edge(12, 25, 1), Edge(13, 26, 1), Edge(13, 27, 1), Edge(14, 28, 1), Edge(14, 29, 1), 
+                 Edge(15, 30, 1), Edge(15, 31, 1), Edge(16, 32, 1), Edge(16, 33, 1), Edge(17, 34, 1), Edge(17, 35, 1),
+                Edge(18, 36, 1), Edge(18, 37, 1), Edge(19, 38, 1), Edge(19, 39, 1), Edge(20, 40, 1), Edge(20, 41, 1),
+                Edge(21, 42, 1), Edge(21, 43, 1), Edge(22, 44, 1), Edge(22, 45, 1), Edge(23, 46, 1), Edge(23, 47, 1),
+                 Edge(24, 48, 1), Edge(24, 49, 1), Edge(25, 50, 1), Edge(25, 51, 1), Edge(26, 52, 1), Edge(26, 53, 1),
+                 Edge(27, 54, 1), Edge(27, 55, 1), Edge(28, 56, 1), Edge(28, 57, 1), Edge(29, 58, 1), Edge(29, 59, 1),
+                 Edge(30, 60, 1), Edge(30, 61, 1), Edge(31, 62, 1), Edge(31, 63, 1) ]
+
+    # Input: No of vertices
+    N = 15
+    D = 63
+    # construct a graph from a given list of edges
+    graph = Graph(edges, N)
+    division = Graph(divisions, D)
+
+    # print adjacency list representation of the graph
+    printGraph(graph)
+    printGraph(division)
+
+
+# In[6]:
+
+
+import random
+
+
+# In[18]:
+
+
+def ordered_items():
+    max_no_of_division = 15
+    max_no_of_items = 3
+    max_no_Of_shelf = 63
+    shelf_no = []
+   
+    
+    ordered_division = random.randint(1, max_no_of_division)
+    no_of_items = random.randint(1, max_no_of_items)
+    if no_of_items > 1:
+        for i in range(no_of_items):
+            shelf_no.append(random.randint(1, max_no_Of_shelf))
+#     order_items = random.sample(order_list, n)
+    else:
+        shelf_no.append(random.randint(1, max_no_Of_shelf))
+    
+    return (ordered_division, no_of_items, shelf_no)
+
+
+# In[20]:
+
+
+ordered_items()
+
+
+# In[ ]:
+
+
+
+
+  
