@@ -1,0 +1,425 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+import numpy as np
+import pandas as pd
+import random
+
+
+# In[2]:
+
+
+class Environment:
+    loc_A, loc_B, loc_C, loc_D, loc_E, loc_F, loc_G, loc_H, loc_I, loc_J = (2, 2), (3, 3), (4, 2), (1, 3) , (3, 1) , (5, 3) , (2, 5) , (5, 6) , (3, 5) , (6, 4)   # The 10 locations for the shelf 
+#     def __init__(self):
+#         self.width = width
+#         self.height = height
+    def setGrid(self):
+        index_ = np.arange(start=1, stop=7)
+        data = np.array([
+                    ['P', '','D', '', '', ''],
+                    ['','A', '', '','G', ''],
+                    ['E', '', 'B', '', 'I', ''],
+                    ['','C', '', '', '', ''],
+                    ['', '', 'F', '', '', 'H'],
+                    ['', '', '', 'J', '', '']               
+                    ])
+
+        Grid = pd.DataFrame(data=data[0:,0:],
+                      index=index_, columns=[1,2,3,4,5,6])
+        return Grid
+
+
+# In[3]:
+
+
+def current_loc(grid, coord):
+    y, x = coord
+    return grid[y][x]
+
+def item_to_location(item):
+    switcher = {
+        'A': env.loc_A,
+        'B': env.loc_B,
+        'C': env.loc_C,
+        'D': env.loc_D,
+        'E': env.loc_E,
+        'F': env.loc_F,
+        'G': env.loc_G,
+        'H': env.loc_H,
+        'I': env.loc_I,
+        'J': env.loc_J,
+        }
+    return switcher.get(item, "empty space")
+
+
+# In[4]:
+
+
+def ordered_items():
+    #item number correspond to the shelf tag A-J
+    order_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+    n = random.randint(1, len(order_list))
+    order_items = random.sample(order_list, n)
+
+    return order_items
+
+
+# In[5]:
+
+
+def Table_Driven_Agent(percept):
+    percepts = []
+    env = Environment()
+    actions_table = {(('empty space', 'Order Not Found'),): 'Move',
+             ((env.loc_A, 'Order Found'),): 'Pick',
+             ((env.loc_B, 'Order Found'),): 'Pick',
+             ((env.loc_C, 'Order Found'),): 'Pick',
+             ((env.loc_D, 'Order Found'),): 'Pick',
+             ((env.loc_E, 'Order Found'),): 'Pick',
+             ((env.loc_F, 'Order Found'),): 'Pick',
+             ((env.loc_G, 'Order Found'),): 'Pick',
+             ((env.loc_H, 'Order Found'),): 'Pick',
+             ((env.loc_I, 'Order Found'),): 'Pick',
+             ((env.loc_J, 'Order Found'),): 'Pick',
+             ((env.loc_A, 'Order Not Found'),): 'Move',
+             ((env.loc_B, 'Order Not Found'),): 'Move',
+             ((env.loc_C, 'Order Not Found'),): 'Move',
+             ((env.loc_D, 'Order Not Found'),): 'Move',
+             ((env.loc_E, 'Order Not Found'),): 'Move',
+             ((env.loc_F, 'Order Not Found'),): 'Move',
+             ((env.loc_G, 'Order Not Found'),): 'Move',
+             ((env.loc_H, 'Order Not Found'),): 'Move',
+             ((env.loc_I, 'Order Not Found'),): 'Move',
+             ((env.loc_J, 'Order Not Found'),): 'Move'}    
+    
+    percepts.append(percept)
+    action = actions_table.get(tuple(percepts))
+    return action
+
+
+# In[6]:
+
+
+def up(y, x):
+    return (y - 1, x)
+    
+def down(y, x):
+    return (y + 1, x)
+    
+def left(y, x):
+    return (y, x - 1)
+    
+def right(y, x):
+    return (y, x + 1)
+
+
+# In[7]:
+
+
+def move(y, x, order_its):    
+    # check if neigbouring grid contains any of the ordered item and pick it if not move randomly
+    next_pos = ()    
+
+
+    if y == 1 and x == 1: #movement can only be to the right and down
+        y_r, x_r =  right(y, x) 
+        itr = grid[y_r][x_r] 
+        y_d, x_d =  down(y, x) 
+        itd = grid[y_d][x_d] 
+        if itr in order_its and itr not in found_items:
+            next_pos = (y_r, x_r) 
+            exit
+        elif itd in order_its and itd not in found_items:
+            next_pos = (y_d, x_d)
+            exit
+        else:
+            next_pos = random_move([(y_r, x_r), (y_d, x_d)])
+            exit
+                
+    elif y == 6 and x == 6: #movement can only be to the up and left
+        y_u, x_u =  up(y, x) 
+        itu = grid[y_u][x_u] 
+        y_l, x_l =  left(y, x) 
+        itl = grid[y_l][x_l] 
+        if itu in order_its and itu not in found_items:
+            next_pos = (y_u, x_u) 
+            exit
+        elif itl in order_its and itl not in found_items:
+#             next_pos = left(y_l, x_l)
+            next_pos = (y_l, x_l)
+            exit
+        else:
+            next_pos = random_move([(y_u, x_u), (y_l, x_l)]) 
+            exit
+                
+    elif y == 1 and x == 6: #movement can only be down and left
+        y_l, x_l =  left(y, x) 
+        itl = grid[y_l][x_l] 
+        y_d, x_d =  down(y, x) 
+        itd = grid[y_d][x_d] 
+        if itd in order_its and itd not in found_items:
+            next_pos = (y_d, x_d) 
+            exit
+        elif itl in order_its and itl not in found_items:
+            next_pos = (y_l, x_l)
+            exit
+        else:
+            next_pos = random_move([(y_l, x_l), (y_d, x_d)]) 
+            exit
+                
+    elif y == 6 and x == 1: #movement can only be to the up and right
+        y_u, x_u =  up(y, x) 
+        itu = grid[y_u][x_u] 
+        y_r, x_r =  right(y, x) 
+        itr = grid[y_r][x_r] 
+        if itu in order_its and itu not in found_items:
+            next_pos = (y_u, x_u) 
+            exit
+        elif itr in order_its and itr not in found_items:
+            next_pos = (y_r, x_r)
+            exit
+        else:
+            next_pos = random_move([(y_r, x_r), (y_u, x_u)]) 
+            exit
+    
+    elif y == 1 and x in range(2,6): #three directional movement possible left, down and right
+        y_l, x_l =  left(y, x) 
+        itl = grid[y_l][x_l] 
+        y_d, x_d =  down(y, x) 
+        itd = grid[y_d][x_d] 
+        y_r, x_r =  right(y, x) 
+        itr = grid[y_r][x_r]
+        if itl in order_its and itl not in found_items:
+            next_pos = (y_l, x_l) 
+            exit
+        elif itd in order_its and itd not in found_items:
+                next_pos = (y_d, x_d)
+                exit
+        elif itr in order_its and itr not in found_items:
+                next_pos = (y_r, x_r)
+                exit
+        else:
+            next_pos = random_move([(y_l, x_l), (y_r, x_r), (y_d, x_d)]) 
+            exit
+                
+    elif y == 6 and x in range(2,6): #three directional movement possible left, up and right
+        y_l, x_l =  left(y, x) 
+        itl = grid[y_l][x_l] 
+        y_u, x_u =  up(y, x) 
+        itu = grid[y_u][x_u]
+        y_r, x_r =  right(y, x) 
+        itr = grid[y_r][x_r]
+        if itu in order_its and itu not in found_items:
+            next_pos = (y_u, x_u)  
+            exit
+        elif itl in order_its and itl not in found_items:
+            next_pos = (y_l, x_l)
+            exit
+        elif itr in order_its and itr not in found_items:
+            next_pos = (y_r, x_r)
+            exit
+        else:
+            next_pos = random_move([(y_l, x_l), (y_r, x_r), (y_u, x_u) ])
+            exit
+                
+    elif y in range(2,6) and x == 1: #three directional movement possible up, down and right
+        y_u, x_u =  up(y, x) 
+        itu = grid[y_u][x_u]
+        y_r, x_r =  right(y, x) 
+        itr = grid[y_r][x_r]
+        y_d, x_d =  down(y, x)
+        itd = grid[y_d][x_d] 
+        if itu in order_its and itu not in found_items:
+            next_pos = (y_u, x_u)  
+            exit
+        elif itd in order_its and itd not in found_items:
+            next_pos = (y_d, x_d)
+            exit
+        elif itr in order_its and itr not in found_items:
+            next_pos = (y_r, x_r)
+            exit
+        else:
+            next_pos = random_move([(y_u, x_u), (y_r, x_r), (y_d, x_d)]) 
+            exit
+                              
+    elif y in range(2,6) and x == 6: #three directional movement possible left, up and down
+        y_l, x_l =  left(y, x) 
+        itl = grid[y_l][x_l] 
+        y_u, x_u =  up(y, x) 
+        itu = grid[y_u][x_u]
+        y_d, x_d =  down(y, x) 
+        itd = grid[y_d][x_d]        
+        if itl in order_its and itl not in found_items:
+            next_pos = (y_l, x_l) 
+            exit
+        elif itu in order_its and itu not in found_items:
+            next_pos = (y_u, x_u)
+            exit
+        elif itd in order_its and itd not in found_items:
+            next_pos = (y_d, x_d)
+            exit
+        else:
+            next_pos = random_move([(y_l, x_l), (y_u, x_u), (y_d, x_d)])
+            exit
+            
+    else:
+#         y in range(2,6) and x in range(2,6):#three directional movement possible right, left, up and down
+        y_u, x_u =  up(y, x) 
+        itu = grid[y_u][x_u] 
+        y_r, x_r =  right(y, x) 
+        itr = grid[y_r][x_r] 
+        y_l, x_l =  left(y, x) 
+        itl = grid[y_l][x_l] 
+        y_d, x_d =  down(y, x) 
+        itd = grid[y_d][x_d] 
+        if itr in order_its and itr not in found_items:
+            next_pos = (y_r, x_r)
+            exit
+        elif itl in order_its and itl not in found_items:
+            next_pos = (y_l, x_l)
+            exit
+        elif itu in order_its and itu not in found_items:
+            next_pos = (y_u, x_u)
+            exit
+        elif itd in order_its and itd not in found_items:
+            next_pos = (y_d, x_d) 
+            exit
+        else:
+            next_pos = random_move([(y_l, x_l), (y_r, x_r), (y_d, x_d), (y_u, x_u)]) 
+            exit
+   
+    return next_pos
+
+
+# In[8]:
+
+
+def random_move(move_list):
+    return random.choice(move_list)
+    
+
+
+# In[9]:
+
+
+# Driver program
+if __name__ == "__main__":
+    env = Environment()
+    grid = env.setGrid()
+    print(grid)
+    longestPath = {}
+    shortestPath = {}
+    score = 0
+    episode_score = 0
+    start_point = (1,1)
+    x = 1
+    y = 1
+    percept = ()
+    found_items = []
+    order_items = ordered_items()
+#     print('\nYou ordered for item type {}'.format(order_items))
+#     stop_run = False
+    episode = 1000
+    run = 0
+    
+    shortesDict = {'episode': 0, 'Score': 0, 'data': []}
+    longestDict =  {'episode': 0, 'Score': 0, 'data': []}
+    shortestList = []
+    longestList =[]
+    shortList = []
+    longList = []
+#     order_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+    
+#     items = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+    found_items = []
+    order_items = ordered_items()
+    path = ()
+    while run < episode:        
+        while len(order_items) != 0:
+            path = (y, x)
+            next_loc = move(y, x, order_items)
+            curr_item = current_loc(grid, next_loc)
+            curr_loc = item_to_location(curr_item)
+
+            if curr_loc == 'empty space':
+#                 print('Robot moved into empty space...')
+                percept = ('empty space', 'Order Not Found')
+
+
+            else:
+                temp_order_list = order_items
+                found = False
+                for item in temp_order_list:
+                    if item == curr_item:
+#                         print("Item {} found in location {}".format(item, curr_loc))
+                        percept = (curr_loc, 'Order Found')
+                        temp_order_list.remove(item)
+                        order_items = temp_order_list
+                        found = True
+
+                if found:
+                    score += 3
+                    episode_score += 3
+
+                else:
+                    percept = (curr_loc, 'Order Not Found')
+                    score -= 1
+                    episode_score -= 1
+#                     print('The item {} not found at the location {} and robot is penalized by -1 point'.format(item, curr_loc))
+
+
+            shortList.append(path)
+            longList.append(path)
+#             print(percept)
+#             print('The robot scored {}'.format(score))
+            action = Table_Driven_Agent(percept)
+#             if action == 'Move':
+#             print('Searching for next item from the order')
+            x, y = next_loc
+#                 print('Robot performs {} action'.format(action))
+#             else:
+#                 print('Robot performs {} action'.format(action))
+                
+                
+
+        if len(shortList) < len(shortestList) or len(shortestList) == 0:
+            shortestList = shortList
+            shortesDict['data'] = shortestList
+            shortesDict['episode'] = run
+            shortesDict['Score'] = episode_score
+            
+                    
+        if len(longList) > len(longestList):
+            longestList = longList
+            longestDict['data'] = longestList
+            longestDict['episode'] = run
+            longestDict['Score'] = episode_score
+                    
+              
+        run += 1
+        order_items = ordered_items()
+        episode_score = 0
+#         print('\nNew order placed: {}'.format(order_items))
+#         print('New Episode {} starts'.format(run))
+        longList = []
+        shortList = []
+        found_items = []                
+            
+    print('Total Score: {} '.format(score))
+    print('Total Average Score: {} '.format(score/run))
+    print('The shortest path: {} '.format(shortesDict))
+    print('Total longest path: {} '.format(longestDict))
+    
+    
+        
+
+
+# In[ ]:
+
+
+
+
