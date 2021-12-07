@@ -1,0 +1,603 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[354]:
+
+
+import pandas as pd 
+import numpy as np                     # For mathematical calculations 
+import seaborn as sns                  # For data visualization 
+import matplotlib.pyplot as plt        # For plotting graphs 
+get_ipython().run_line_magic('matplotlib', 'inline')
+import warnings                        # To ignore any warnings warnings.filterwarnings("ignore")
+
+
+# In[355]:
+
+
+train = pd.read_csv("./data/train_u6lujuX_CVtuZ9i.csv") 
+test = pd.read_csv("./data/test_Y3wMUE5_7gLdaTN.csv")
+
+
+# In[356]:
+
+
+train_org = train.copy() 
+test_org = test.copy()
+
+
+# In[359]:
+
+
+train_org.columns
+
+
+# In[360]:
+
+
+train_org.head()
+
+
+# In[361]:
+
+
+test_org.columns
+
+
+# In[362]:
+
+
+train_org.dtypes
+
+
+# In[363]:
+
+
+test_org.dtypes
+
+
+# In[364]:
+
+
+train_org.shape, test_org.shape
+
+
+# In[365]:
+
+
+train_org['Loan_Status'].value_counts()
+
+
+# In[366]:
+
+
+train_org['Loan_Status'].value_counts(normalize=True)
+
+
+# # Target Variable
+# Loan_ Status
+
+# In[367]:
+
+
+train_org['Loan_Status'].value_counts().plot.bar()
+
+
+# In[368]:
+
+
+train_org['Gender'].value_counts(normalize=True)
+
+
+# # Independent Variable (Categorical)
+# Gender, Married, Self_Employed, Education, Credit_History
+
+# In[369]:
+
+
+plt.figure(2) 
+plt.subplot(221) 
+train_org['Gender'].value_counts(normalize=True).plot.bar(figsize=(20,10), title= 'Gender') 
+plt.subplot(222) 
+train_org['Married'].value_counts(normalize=True).plot.bar(title= 'Married') 
+plt.subplot(223)
+train_org['Education'].value_counts(normalize=True).plot.bar(title = 'Education') 
+plt.subplot(224) 
+train_org['Self_Employed'].value_counts(normalize=True).plot.bar(title= 'Self_Employed') 
+ 
+plt.show()
+
+
+# In[370]:
+
+
+
+train_org['Credit_History'].value_counts(normalize=True).plot.bar(title= 'Credit_History')
+
+
+# # Independent Variable (Ordinal)
+# Dependents, Property_Area
+
+# In[371]:
+
+
+plt.figure(1)
+plt.subplot(131)
+train_org['Dependents'].value_counts(normalize=True).plot.bar(figsize=(20,5), title = 'Dependents') 
+plt.subplot(132)
+train_org['Property_Area'].value_counts(normalize=True).plot.bar(title = 'Property_Area') 
+
+
+# # Independent Variable (Numerical)
+# ApplicantIncome, CoapplicantIncome, LoanAmount, Loan_Amount_Term
+
+# In[372]:
+
+
+plt.figure(1) 
+plt.subplot(121) 
+sns.distplot(train_org['ApplicantIncome']); 
+plt.subplot(122) 
+train_org['ApplicantIncome'].plot.box(figsize=(16,5)) 
+plt.show()
+
+
+# Segregate ApplicantIncome by Education:
+
+# In[373]:
+
+
+train_org.boxplot(column='ApplicantIncome', by = 'Education')
+plt.suptitle("")
+
+
+# The distribution of Income variable.
+
+# In[374]:
+
+
+plt.figure(1) 
+plt.subplot(121) 
+sns.distplot(train_org['CoapplicantIncome']); 
+plt.subplot(122) 
+train_org['CoapplicantIncome'].plot.box(figsize=(16,5)) 
+plt.show()
+
+
+# The distribution of LoanAmount variable.
+
+# In[375]:
+
+
+
+train_org['LoanAmount'] = train_org['LoanAmount'].fillna( 
+                               train_org['LoanAmount'].dropna().mean() )
+
+
+
+# sns.distplot(train_org['LoanAmount'],color = "g").set_title('LoanAmount Distribution')
+plt.figure(1) 
+plt.subplot(121) 
+df=train_org.dropna() 
+sns.distplot(train_org['LoanAmount']); 
+plt.subplot(122) 
+train_org['LoanAmount'].plot.box(figsize=(16,5)) 
+plt.show()
+
+
+# # Lets recall some of the hypotheses that we generated earlier:
+# 
+#     * Applicants with high income should have more chances of loan approval.
+#     * Applicants who have repaid their previous debts should have higher chances of loan approval.
+#     * Loan approval should also depend on the loan amount. If the loan amount is less, 
+#       chances of loan approval should be high.
+#     * Lesser the amount to be paid monthly to repay the loan, higher the chances of loan approval.
+
+# # Categorical Independent Variable vs Target Variable
+
+# In[376]:
+
+
+Gender = pd.crosstab(train_org['Gender'], train_org['Loan_Status'])
+Married = pd.crosstab(train_org['Married'], train_org['Loan_Status'])
+Self_Employed = pd.crosstab(train_org['Self_Employed'], train_org['Loan_Status'])
+Credit_History = pd.crosstab(train_org['Credit_History'], train_org['Loan_Status'])
+Education = pd.crosstab(train_org['Education'], train_org['Loan_Status'])
+Gender
+
+
+# In[377]:
+
+
+Married
+
+
+# In[378]:
+
+
+Self_Employed
+
+
+# In[379]:
+
+
+Credit_History
+
+
+# In[380]:
+
+
+Education
+
+
+# In[381]:
+
+
+Married.div(Married.sum(1).astype(float), axis=0).plot(kind="bar", stacked=True, figsize=(4,4)) 
+plt.show() 
+Gender.div(Gender.sum(1).astype(float), axis=0).plot(kind="bar", stacked=True) 
+plt.show() 
+Education.div(Education.sum(1).astype(float), axis=0).plot(kind="bar", stacked=True, figsize=(4,4)) 
+plt.show() 
+Self_Employed.div(Self_Employed.sum(1).astype(float), axis=0).plot(kind="bar", stacked=True, figsize=(4,4)) 
+plt.show()
+Credit_History.div(Credit_History.sum(1).astype(float), axis=0).plot(kind="bar", stacked=True, figsize=(4,4)) 
+plt.show()
+
+
+# # Categorical Independent Variable vs Target Variable
+
+# In[382]:
+
+
+Dependents = pd.crosstab(train_org['Dependents'],train['Loan_Status']) 
+Property_Area = pd.crosstab(train_org['Property_Area'],train['Loan_Status']) 
+
+Dependents
+
+
+# In[383]:
+
+
+Property_Area
+
+
+# In[384]:
+
+
+Dependents.div(Dependents.sum(1).astype(float), axis=0).plot(kind="bar", stacked=True) 
+plt.show()
+Property_Area.div(Property_Area.sum(1).astype(float), axis=0).plot(kind="bar", stacked=True) 
+plt.show()
+
+
+# # Numerical Independent Variable vs Target Variable
+
+# The mean income of people for which the loan has been approved vs the mean income of people for which the loan has not been approved.
+
+# In[385]:
+
+
+train_org.groupby('Loan_Status')['ApplicantIncome'].sum()
+
+
+# In[386]:
+
+
+train_org.groupby('Loan_Status')['ApplicantIncome'].mean().plot.bar()
+
+
+# In[387]:
+
+
+bins = [0,2500,4000,6000,81000] 
+group = ['Low','Average','High', 'Very high'] 
+train_org['Income_bin'] = pd.cut(train_org['ApplicantIncome'],bins,labels=group)
+
+Income_bin = pd.crosstab(train_org['Income_bin'],train_org['Loan_Status']) 
+Income_bin.div(Income_bin.sum(1).astype(float), axis=0).plot(kind="bar", stacked=True) 
+plt.xlabel('ApplicantIncome') 
+P = plt.ylabel('Percentage')
+
+
+# In[388]:
+
+
+train_org.groupby('Loan_Status')['CoapplicantIncome'].sum()
+
+
+# In[389]:
+
+
+bins = [0,1000,3000,42000] 
+group = ['Low','Average','High'] 
+train_org['Coapplicant_Income_bin'] = pd.cut(train_org['CoapplicantIncome'],bins,labels = group)
+
+Coapplicant_Income_bin = pd.crosstab(train_org['Coapplicant_Income_bin'],train_org['Loan_Status']) 
+Coapplicant_Income_bin.div(Coapplicant_Income_bin.sum(1).astype(float), axis = 0).plot(kind = "bar", stacked = True) 
+plt.xlabel('CoapplicantIncome') 
+P  =  plt.ylabel('Percentage')
+
+
+# # ##Combined Income
+
+# In[390]:
+
+
+train_org['Total_Income'] = train_org['ApplicantIncome']+train_org['CoapplicantIncome']
+
+train_org.groupby('Loan_Status')['Total_Income'].mean()
+
+
+# In[391]:
+
+
+bins = [0,2500,4000,6000,81000] 
+group = ['Low','Average','High', 'Very high'] 
+train_org['Total_Income_bin'] = pd.cut(train_org['Total_Income'],bins,labels = group)
+
+Total_Income_bin = pd.crosstab(train_org['Total_Income_bin'],train_org['Loan_Status']) 
+Total_Income_bin.div(Total_Income_bin.sum(1).astype(float), axis = 0).plot(kind = "bar", stacked = True) 
+plt.xlabel('Total_Income') 
+P  =  plt.ylabel('Percentage')
+
+
+# In[392]:
+
+
+bins = [0,100,200,700] 
+group = ['Low','Average','High'] 
+train_org['LoanAmount_bin'] = pd.cut(train_org['LoanAmount'],bins,labels = group)
+
+LoanAmount_bin = pd.crosstab(train_org['LoanAmount_bin'],train_org['Loan_Status']) 
+LoanAmount_bin.div(LoanAmount_bin.sum(1).astype(float), axis = 0).plot(kind = "bar", stacked = True) 
+plt.xlabel('LoanAmount') 
+P  =  plt.ylabel('Percentage')
+
+
+# Drop the bins which we created for the exploration part. 
+# Change the 3+ in dependents variable to 3 to make it a numerical variable.
+# Convert the target variable’s categories into 0 and 1 so that we can find its correlation with numerical variables - One more reason to do so is few models like logistic regression takes only numeric values as input. 
+# Replace N with 0 and Y with 1.
+
+# In[393]:
+
+
+train_org=train_org.drop(['Income_bin', 'Coapplicant_Income_bin', 'LoanAmount_bin', 'Total_Income_bin', 'Total_Income'], axis=1)
+
+train_org['Dependents'].replace('3+', 3,inplace=True) 
+test_org['Dependents'].replace('3+', 3,inplace=True) 
+train_org['Loan_Status'].replace('N', 0,inplace=True) 
+train_org['Loan_Status'].replace('Y', 1,inplace=True)
+
+
+# Lets look at the correlation between all the numerical variables. 
+# The heat map to visualize the correlation. Heatmaps visualize data through variations in coloring. 
+# The variables with darker color means their correlation is more.
+
+# In[394]:
+
+
+matrix = train_org.corr() 
+f, ax = plt.subplots(figsize=(9, 6)) 
+sns.heatmap(matrix, vmax=.8, square=True, cmap="BuPu")
+
+
+# In[395]:
+
+
+train_org.isnull().sum()
+
+
+# In[396]:
+
+
+train_org['Gender'].fillna(train_org['Gender'].mode()[0], inplace=True) 
+train_org['Married'].fillna(train_org['Married'].mode()[0], inplace=True) 
+train_org['Dependents'].fillna(train_org['Dependents'].mode()[0], inplace=True) 
+train_org['Self_Employed'].fillna(train_org['Self_Employed'].mode()[0], inplace=True) 
+train_org['Credit_History'].fillna(train_org['Credit_History'].mode()[0], inplace=True)
+
+
+# In[397]:
+
+
+train_org['Loan_Amount_Term'].value_counts()
+
+
+# In[398]:
+
+
+train_org['Loan_Amount_Term'].fillna(train_org['Loan_Amount_Term'].mode()[0], inplace=True)
+
+
+# In[399]:
+
+
+train_org['LoanAmount'].fillna(train_org['LoanAmount'].median(), inplace=True)
+
+
+# In[400]:
+
+
+train_org.isnull().sum()
+
+
+# In[401]:
+
+
+test_org['Gender'].fillna(train_org['Gender'].mode()[0], inplace=True) 
+test_org['Dependents'].fillna(train_org['Dependents'].mode()[0], inplace=True) 
+test_org['Self_Employed'].fillna(train_org['Self_Employed'].mode()[0], inplace=True) 
+test_org['Credit_History'].fillna(train_org['Credit_History'].mode()[0], inplace=True) 
+test_org['Loan_Amount_Term'].fillna(train_org['Loan_Amount_Term'].mode()[0], inplace=True) 
+test_org['LoanAmount'].fillna(train_org['LoanAmount'].median(), inplace=True)
+
+
+# In[402]:
+
+
+test_org.isnull().sum()
+
+
+# # Outlier Treatment with Log Transformation
+
+# In[403]:
+
+
+train_org['LoanAmount_log'] = np.log(train_org['LoanAmount']) 
+train_org['LoanAmount_log'].hist(bins=20) 
+test_org['LoanAmount_log'] = np.log(test['LoanAmount'])
+
+
+# Lets drop the Loan_ID variable as it do not have any effect on the loan status.
+
+# In[404]:
+
+
+train_org = train.drop('Loan_ID',axis=1) 
+test_org = test.drop('Loan_ID',axis=1)
+
+
+# Drop the target variable from the train dataset and save it in another dataset.
+
+# In[405]:
+
+
+X = train_org.drop('Loan_Status',1) 
+y = train_org.Loan_Status
+
+
+# We make dummy variables for the categorical variables to turn it into a series of 0 and 1, making them lot easier to quantify and compare
+
+# In[406]:
+
+
+X = pd.get_dummies(X) 
+train_org = pd.get_dummies(train_org) 
+test_org = pd.get_dummies(test_org)
+test_org
+
+
+# we can divide our train dataset into two parts: train and validation. 
+
+# In[407]:
+
+
+from sklearn.model_selection import train_test_split
+
+x_train, x_cv, y_train, y_cv = train_test_split(X,y, test_size =0.3)
+
+
+# In[411]:
+
+
+x_train['Credit_History'].fillna(x_train['Credit_History'].median(), inplace=True)
+x_train['LoanAmount'].fillna(x_train['LoanAmount'].median(), inplace=True)
+x_train['Loan_Amount_Term'].fillna(x_train['Loan_Amount_Term'].median(), inplace=True)
+
+x_cv['Credit_History'].fillna(x_train['Credit_History'].median(), inplace=True)
+x_cv['LoanAmount'].fillna(x_train['LoanAmount'].median(), inplace=True)
+x_cv['Loan_Amount_Term'].fillna(x_train['Loan_Amount_Term'].median(), inplace=True)
+
+
+# In[412]:
+
+
+x_train
+
+
+# # import LogisticRegression and accuracy_score from sklearn and fit the logistic regression model.
+# Now we will train the model on training dataset and make predictions for the test dataset. 
+# 
+
+# In[413]:
+
+
+from sklearn.linear_model import LogisticRegression 
+from sklearn.metrics import accuracy_score
+
+model = LogisticRegression() 
+model.fit(x_train, y_train)
+
+LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,intercept_scaling=1, max_iter=100, multi_class='ovr', n_jobs=1, penalty='l2', random_state=1, solver='liblinear', tol=0.0001, verbose=0, warm_start=False)
+
+
+# Let’s predict the Loan_Status for validation set and calculate its accuracy.
+
+# In[414]:
+
+
+pred_cv = model.predict(x_cv)
+y_cv
+
+
+# Let us calculate how accurate our predictions are by calculating the accuracy.
+
+# In[415]:
+
+
+accuracy_score(y_cv,pred_cv)
+
+
+# Let’s make predictions for the test dataset.
+
+# In[417]:
+
+
+test_org['Credit_History'].fillna(test_org['Credit_History'].median(), inplace=True)
+test_org['LoanAmount'].fillna(test_org['LoanAmount'].median(), inplace=True)
+test_org['Loan_Amount_Term'].fillna(test_org['Loan_Amount_Term'].median(), inplace=True)
+
+test_org.head()
+
+
+# Lets import the submission file which we have to submit on the solution checker.
+
+# In[442]:
+
+
+pred_test = model.predict(test_org)
+
+
+# In[437]:
+
+
+submission=pd.read_csv("./data/my_submission7.csv")
+
+
+# In[438]:
+
+
+submission['Loan_Status']=pred_test 
+submission['Loan_ID']=test_original['Loan_ID']
+
+
+# Remember we need predictions in Y and N. So let’s convert 1 and 0 to Y and N.
+
+# In[439]:
+
+
+submission['Loan_Status'].replace(0, 'N',inplace=True) 
+submission['Loan_Status'].replace(1, 'Y',inplace=True)
+
+
+# In[440]:
+
+
+submission
+
+
+# Finally we will convert the submission to .csv format and make submission to check the accuracy on the leaderboard.
+
+# In[443]:
+
+
+pd.DataFrame(submission, columns=['Loan_ID','Loan_Status']).to_csv('./data/logistic.csv')
+
+
+# In[ ]:
+
+
+
+
