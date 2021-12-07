@@ -1,0 +1,261 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# 
+
+# In[1]:
+
+
+# table of contents
+# 1. PCA on digits for visualization
+# 2. PCA on digits for compression
+# 3. PCA on digits improve classification
+# 4. K-means clustering on digits
+import numpy as np
+import pylab as py
+get_ipython().run_line_magic('matplotlib', 'inline')
+
+# digit recognition setup...
+from sklearn.datasets import load_digits
+digits = load_digits()
+X, y = digits.data, digits.target
+print("data shape: %r, target shape: %r" % (X.shape, y.shape))
+print("classes: %r" % list(np.unique(y)))
+n_samples, n_features = X.shape
+print("n_samples=%d" % n_samples)
+print("n_features=%d" % n_features)
+
+
+# In[2]:
+
+
+def plot_gallery(data, labels, shape, interpolation='nearest'):
+    for i in range(data.shape[0]):
+        py.subplot(1, data.shape[0], (i + 1))
+        py.imshow(data[i].reshape(shape), interpolation=interpolation)
+        py.title(labels[i])
+        py.xticks(()), py.yticks(())
+        py.gray()
+subsample = np.random.permutation(X.shape[0])[:5]
+images = X[subsample]
+labels = ['True class: %d' % l for l in y[subsample]]
+plot_gallery(images, labels, shape=(8, 8))
+
+
+# In[3]:
+
+
+# 1. PCA on digits for visualization
+# table of contents
+# 1. PCA on digits for visualization
+# 2. PCA on digits for compression
+# 3. PCA on digits improve classification
+# 4. K-means clustering on digits
+import numpy as np
+import pylab as py
+get_ipython().run_line_magic('matplotlib', 'inline')
+from sklearn.decomposition import RandomizedPCA
+pca = RandomizedPCA(n_components=5)
+X_pca = pca.fit_transform(X)
+X_pca.shape
+from itertools import cycle
+colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+markers = ['+', 'o', '^', 'v', '<', '>', 'D', 'h', 's']
+for i, c, m in zip(np.unique(y), cycle(colors), cycle(markers)):
+    py.scatter(X_pca[y == i, 0], X_pca[y == i, 1],
+    c=c, marker=m, label=i, alpha=0.5)
+    
+_ = py.legend(loc='best')
+
+
+# In[4]:
+
+
+labels = ['Component #%d' % i for i in range(len(pca.components_))]
+plot_gallery(pca.components_, labels, shape=(8, 8))
+
+
+# In[5]:
+
+
+# 2. PCA on digits for compression
+n = 8 # number of digits for demonstration
+dims = [1,2,3,5,10,20,40,64]
+# compressed images of first 8 digits
+# with this many PCA components: [1, 2, 3, 5, 10, 20, 40, 64]
+# [ , , , , , , , ]
+print('compressed images of first',n,'digits')
+print('with this many PCA components:',dims)
+for d in dims: # dimensionality for compressed signal
+    pca = RandomizedPCA(n_components=d)
+    pca.fit_transform(X)
+    reduced_X = pca.transform(X[0:n]) # the reduced dimensionality
+    recovered_X = pca.inverse_transform(reduced_X)
+    py.figure()
+    plot_gallery(recovered_X, y[0:n], shape=(8, 8))
+
+
+# In[6]:
+
+
+# 3. PCA on digits improve classification
+# train data shape: (898, 64), train target shape: (898,)
+# test data shape: (899, 64), test target shape: (899,)
+# training score (overfitting!): 0.875278396437
+# test score: 0.83426028921
+from sklearn.cross_validation import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)
+print("train data shape: %r, train target shape: %r" % (X_train.shape, y_train.shape))
+print("test data shape: %r, test target shape: %r" % (X_test.shape, y_test.shape))
+
+from sklearn.naive_bayes import GaussianNB
+model = GaussianNB().fit(X_train, y_train)
+train_score = model.score(X_train, y_train)
+print('training score (overfitting!):',train_score)
+test_score = model.score(X_test, y_test)
+print('test score:',test_score)
+
+
+# In[7]:
+
+
+# but now using PCA features instead of pixels directly!
+pca = RandomizedPCA(n_components=10)
+pca.fit(X_train)
+tX_train = pca.transform(X_train)
+tX_test = pca.transform(X_test)
+model = GaussianNB().fit(tX_train, y_train)
+train_score = model.score(tX_train, y_train)
+print('training score (overfitting!):',train_score)
+test_score = model.score(tX_test, y_test)
+print('test score:',test_score)
+from sklearn import metrics
+y_test_pred = model.predict(tX_test)
+expected = y_test
+predicted = model.predict(tX_test)
+print("Confusion matrix:\n%s" % metrics.confusion_matrix(expected, predicted))
+
+
+# In[10]:
+
+
+# let's plot accuracy vs number of components!
+accuracy = []
+n_comp = range(1,64)
+for i in n_comp:
+    pca = RandomizedPCA(n_components=i)
+    pca.fit(X_train)
+    tX_train = pca.transform(X_train)
+    tX_test = pca.transform(X_test)
+    model = GaussianNB().fit(tX_train, y_train)
+    test_score = model.score(tX_test, y_test)
+    accuracy.append(test_score)
+
+py.plot(n_comp, accuracy)
+py.xlabel('number of PCA components')
+py.ylabel('digit recognition accuracy')
+
+
+# In[11]:
+
+
+# 4. K-means clustering on digits
+# identify 10 clusters (which should correspond to digits)
+from sklearn import cluster
+k_means = cluster.KMeans(n_clusters=10)
+k_means.fit(digits.data)
+print('true :',digits.target[::50])
+print('kmeans:',k_means.labels_[::50])
+metrics.adjusted_rand_score(digits.target, k_means.labels_)
+
+
+# In[12]:
+
+
+dbscan = cluster.DBSCAN(eps = 24, min_samples = 20)
+dbscan.fit(digits.data)
+print('true :',digits.target[::50])
+print('dbscan:',dbscan.labels_[::50])
+metrics.adjusted_rand_score(digits.target, dbscan.labels_)
+
+
+# ## No. 1: The percent variance explained for each PCA component, from the first to the last
+
+# In[13]:
+
+
+from sklearn.decomposition import PCA
+print('Explained variation per principal component: {}'.format(pca.explained_variance_ratio_))
+
+
+# ## No. 2: The plotted PCA components is most useful for discriminating a 0 from a 1 
+
+# In[ ]:
+
+
+
+
+
+# ## No. 4: PCA affecting recognition accuracy: Make a plot of the accuracy of K nearest neighbors with k = 1 as the number of PCA dimensions is increased. Note: Unlike Gaussian Naive Bayes in the example, it is possible that the maximum accuracy is at 64 dimensions.
+
+# In[17]:
+
+
+from sklearn.cross_validation import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)
+print("train data shape: %r, train target shape: %r" % (X_train.shape, y_train.shape))
+print("test data shape: %r, test target shape: %r" % (X_test.shape, y_test.shape))
+
+from sklearn.neighbors import KNeighborsClassifier
+model = KNeighborsClassifier(n_neighbors=1).fit(X_train, y_train)
+train_score = model.score(X_train, y_train)
+print('training score (overfitting!):',train_score)
+test_score = model.score(X_test, y_test)
+print('test score:',test_score)
+
+
+# In[18]:
+
+
+# but now using PCA features instead of pixels directly!
+pca = RandomizedPCA(n_components=10)
+pca.fit(X_train)
+tX_train = pca.transform(X_train)
+tX_test = pca.transform(X_test)
+model = KNeighborsClassifier(n_neighbors=1).fit(tX_train, y_train)
+train_score = model.score(tX_train, y_train)
+print('training score (overfitting!):',train_score)
+test_score = model.score(tX_test, y_test)
+print('test score:',test_score)
+from sklearn import metrics
+y_test_pred = model.predict(tX_test)
+expected = y_test
+predicted = model.predict(tX_test)
+print("Confusion matrix:\n%s" % metrics.confusion_matrix(expected, predicted))
+
+
+# In[19]:
+
+
+# let's plot accuracy vs number of components!
+accuracy = []
+n_comp = range(1,64)
+for i in n_comp:
+    pca = RandomizedPCA(n_components=i)
+    pca.fit(X_train)
+    tX_train = pca.transform(X_train)
+    tX_test = pca.transform(X_test)
+    model = KNeighborsClassifier(n_neighbors=1).fit(tX_train, y_train)
+    test_score = model.score(tX_test, y_test)
+    accuracy.append(test_score)
+
+py.plot(n_comp, accuracy)
+py.xlabel('number of PCA components')
+py.ylabel('digit recognition accuracy')
+
+
+# In[ ]:
+
+
+
+
