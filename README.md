@@ -1,5 +1,5 @@
-# Machine-learning-AI-Projects
-Decision-Tree-from-Scratch
+## Machine-learning-AI-Projects
+# Decision-Tree-from-Scratch
 Decision-Tree-from-Scratch
 Hierarchical-Clustering-of-Covid19-Publications
 Hierarchical-Clustering-of-Covid19-Publications
